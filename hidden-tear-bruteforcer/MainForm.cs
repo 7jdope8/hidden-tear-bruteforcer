@@ -29,15 +29,33 @@ using System.Text.RegularExpressions;
 namespace hidden_tear_bruteforcer
 {
 
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
-        
+
+        // Filenames
         String sampleFileName;
         static String keyListFileName;
         static String decryptedFileName;
 
+        // Sample timestamp
+        static long sampleTimestampTick;
+
+        // Modes
+        enum Mode
+        {
+            HiddenTear,
+            EDA2,
+            //Custom
+        };
+
+        // Current mode
+        static Mode currentMode = Mode.EDA2;
+
         // Attempts run
         static int attempts = 0;
+
+        // Modified date dialog (form)
+        ModifiedDateForm modifiedDialog = new ModifiedDateForm();
 
         // Keys loaded from file
         static Queue<String> keyList = new Queue<String>();
@@ -55,7 +73,9 @@ namespace hidden_tear_bruteforcer
         // The salt bytes must be at least 8 bytes.
         static byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
-        static string seed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*/&%!=";
+        // Random strings from samples
+        static string randomString = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*/&%!=";
+        static string randomString2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/";
 
         // AES instance
         static RijndaelManaged AES = new RijndaelManaged
@@ -71,9 +91,27 @@ namespace hidden_tear_bruteforcer
         // RNG instance
         static RNGCryptoServiceProvider rNGCryptoServiceProvider = new RNGCryptoServiceProvider();
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+
+            // Display version in title
+            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            this.Text = String.Format("HT BruteForcer v{0}", version);
+
+            // Load the modes into list
+            var modes = Enum.GetValues(typeof(Mode));
+
+            foreach (var mode in modes)
+            {
+                ModeLabel.DropDownItems.Add(mode.ToString());
+            }
+            ModeLabel.Text = "Mode: " + ModeLabel.DropDownItems[0].Text;
+
         }
 
         public static int GetInt(RNGCryptoServiceProvider rnd, int max)
@@ -95,9 +133,20 @@ namespace hidden_tear_bruteforcer
             
             while (length-- > 0)
             {
-                stringBuilder.Append(seed[Form1.GetInt(rNGCryptoServiceProvider, seed.Length)]);
+                stringBuilder.Append(randomString[MainForm.GetInt(rNGCryptoServiceProvider, randomString.Length)]);
             }
             return stringBuilder.ToString();
+        }
+
+        public static string CreatePseudoPassword(int length, int seed)
+        {
+            StringBuilder res = new StringBuilder();
+            Random rnd = new Random(seed);
+            while (0 < length--)
+            {
+                res.Append(randomString2[rnd.Next(randomString2.Length)]);
+            }
+            return res.ToString();
         }
 
         static public byte[] AES_Decrypt(byte[] bytesToBeDecrypted, byte[] passwordBytes)
@@ -165,6 +214,12 @@ namespace hidden_tear_bruteforcer
             // Byte buffer
             byte[] bytesFileMagic = new byte[8];
 
+            // Different buffer
+            int diff = 0;
+
+            // Cache integer cast of timestamp
+            int sampleTimestampTickInt = (int)sampleTimestampTick;
+
             while (true)
             {
                 attempts++;
@@ -176,16 +231,52 @@ namespace hidden_tear_bruteforcer
                 }
 
                 // Check for a loaded key list
-                if (keyListFileName == null)
+                if (keyListFileName != null)
                 {
-                    // Generate a random password
-                    passwordAttempt = CreatePassword(32);
-                    //passwordAttempt = "VrtiGxUbI8afaJwGbkePtpJKINyGIkZC";
+
+                    // Get next key from key list
+                    passwordAttempt = GetNextKey();
+
                 }
                 else
                 {
-                    // Get next key from key list
-                    passwordAttempt = GetNextKey();
+                    // Determine mode
+                    switch (currentMode) {
+
+                        // HiddenTear mode
+                        case Mode.HiddenTear:
+
+                            // Generate a random password
+                            passwordAttempt = CreatePassword(32);
+
+                            // Test password for known file
+                            //passwordAttempt = "VrtiGxUbI8afaJwGbkePtpJKINyGIkZC";
+
+                            break;
+
+                        // EDA2 mode
+                        case Mode.EDA2:
+
+                            // Generate psuedo-random password
+                            passwordAttempt = CreatePseudoPassword(15, sampleTimestampTickInt - diff);
+                            diff++;
+
+                            break;
+
+                        // Custom mode
+                        /*
+                        case Mode.Custom:
+
+                            // TODO: Grab values for which password generator to use, length of password, and random string to use
+
+                            break;
+                        */
+                        default:
+
+                            throw new InvalidEnumArgumentException("Invalid mode");
+
+                    }
+
                 }
 
                 // Check to break on end of key file
@@ -315,13 +406,6 @@ namespace hidden_tear_bruteforcer
             }
         }
 
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            
-            this.Text = String.Format("HT BruteForcer v{0}", version);
-        }
-
         private int LoadKeyList(String keyListFile)
         {
             // Clear key list
@@ -349,9 +433,18 @@ namespace hidden_tear_bruteforcer
         {
             if (openSampleFileDialog.ShowDialog() == DialogResult.OK)
             {
+
+                // Get sample filename
                 this.sampleFileName = openSampleFileDialog.FileName;
 
+                // Get modified date in milliseconds
+                sampleTimestampTick = File.GetLastWriteTime(sampleFileName).Ticks;
+
+                // Set form controls
+                modifiedDialog.ModifiedDatePicker.Value = modifiedDialog.ModifiedTimePicker.Value = new DateTime(sampleTimestampTick);
+
                 FileSelectedLabel.Text = Path.GetExtension(sampleFileName) + " file loaded";
+
             }
         }
 
@@ -365,6 +458,32 @@ namespace hidden_tear_bruteforcer
                int keys = LoadKeyList(keyListFileName);
                DisplayText.Text = keys + " keys loaded";
                Log("Loaded list \"" + Path.GetFileName(keyListFileName) + "\" with " + keys + " keys");
+
+            }
+        }
+
+        private void ModeLabel_Click(object sender, EventArgs e)
+        {
+            // Show the dropdown
+            ModeLabel.ShowDropDown();
+        }
+
+        private void ModeLabel_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            // Set the current mode
+            currentMode = (Mode) Enum.Parse(typeof(Mode), e.ClickedItem.ToString());
+
+            // Update the label
+            ModeLabel.Text = "Mode: " + e.ClickedItem.ToString();
+
+        }
+
+        private void setModifiedDateToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if(modifiedDialog.ShowDialog() == DialogResult.OK)
+            {
+
+                sampleTimestampTick = (int) modifiedDialog.ModifiedDatePicker.Value.Ticks;
 
             }
         }

@@ -1,6 +1,6 @@
 ﻿namespace hidden_tear_bruteforcer
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.bruteforceButton = new System.Windows.Forms.Button();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
@@ -43,7 +43,11 @@
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadKeyListToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openKeyListFileDialog = new System.Windows.Forms.OpenFileDialog();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.ModeLabel = new System.Windows.Forms.ToolStripSplitButton();
+            this.setModifiedDateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainMenu.SuspendLayout();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // bruteforceButton
@@ -158,7 +162,8 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.loadKeyListToolStripMenuItem});
+            this.loadKeyListToolStripMenuItem,
+            this.setModifiedDateToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
             this.fileToolStripMenuItem.Text = "File";
@@ -166,7 +171,7 @@
             // loadKeyListToolStripMenuItem
             // 
             this.loadKeyListToolStripMenuItem.Name = "loadKeyListToolStripMenuItem";
-            this.loadKeyListToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.loadKeyListToolStripMenuItem.Size = new System.Drawing.Size(168, 22);
             this.loadKeyListToolStripMenuItem.Text = "Load Key List";
             this.loadKeyListToolStripMenuItem.Click += new System.EventHandler(this.loadKeyListToolStripMenuItem_Click);
             // 
@@ -174,11 +179,37 @@
             // 
             this.openKeyListFileDialog.Filter = "Key List (*.csv)|*.csv";
             // 
+            // statusStrip1
+            // 
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ModeLabel});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 316);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(354, 22);
+            this.statusStrip1.TabIndex = 11;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // ModeLabel
+            // 
+            this.ModeLabel.Name = "ModeLabel";
+            this.ModeLabel.Size = new System.Drawing.Size(82, 20);
+            this.ModeLabel.Text = "ModeLabel";
+            this.ModeLabel.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.ModeLabel_DropDownItemClicked);
+            this.ModeLabel.Click += new System.EventHandler(this.ModeLabel_Click);
+            // 
+            // setModifiedDateToolStripMenuItem
+            // 
+            this.setModifiedDateToolStripMenuItem.Name = "setModifiedDateToolStripMenuItem";
+            this.setModifiedDateToolStripMenuItem.Size = new System.Drawing.Size(168, 22);
+            this.setModifiedDateToolStripMenuItem.Text = "Set Modified Date";
+            this.setModifiedDateToolStripMenuItem.Click += new System.EventHandler(this.setModifiedDateToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(354, 325);
+            this.ClientSize = new System.Drawing.Size(354, 338);
+            this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.InfoLabel);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.AttemptsLabel);
@@ -198,6 +229,8 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.mainMenu.ResumeLayout(false);
             this.mainMenu.PerformLayout();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -218,6 +251,9 @@
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadKeyListToolStripMenuItem;
         private System.Windows.Forms.OpenFileDialog openKeyListFileDialog;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripSplitButton ModeLabel;
+        private System.Windows.Forms.ToolStripMenuItem setModifiedDateToolStripMenuItem;
     }
 }
 
