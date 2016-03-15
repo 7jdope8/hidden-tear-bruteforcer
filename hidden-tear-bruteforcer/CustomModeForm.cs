@@ -10,18 +10,17 @@ using System.Windows.Forms;
 
 namespace hidden_tear_bruteforcer
 {
-    public partial class ModifiedDateForm : Form
+    public partial class CustomModeForm : Form
     {
-
         // Flag for close by button
         public bool closedByButton = false;
 
-        public ModifiedDateForm()
+        public CustomModeForm()
         {
             InitializeComponent();
         }
 
-        private void SetModifiedButton_Click(object sender, EventArgs e)
+        private void ApplySettingsButton_Click(object sender, EventArgs e)
         {
 
             // Set close flag
@@ -31,5 +30,6 @@ namespace hidden_tear_bruteforcer
             Close();
 
         }
+
     }
 }

@@ -32,6 +32,22 @@ namespace hidden_tear_bruteforcer
     public partial class MainForm : Form
     {
 
+        // Custom settings structure
+        public struct CustomSettings
+        {
+            public enum PasswordGenerator
+            {
+                CreateSecurePassword,
+                CreatePseudoPassword
+            };
+            public int passwordLength;
+            public PasswordGenerator passwordGenerator;
+            public string possibleCharacters;
+        }
+
+        // Custom settings loaded
+        static CustomSettings customSettings = new CustomSettings();
+
         // Filenames
         String sampleFileName;
         static String keyListFileName;
@@ -41,21 +57,24 @@ namespace hidden_tear_bruteforcer
         static long sampleTimestampTick;
 
         // Modes
-        enum Mode
+        public enum Mode
         {
             HiddenTear,
             EDA2,
-            //Custom
+            Custom
         };
 
         // Current mode
-        static Mode currentMode = Mode.EDA2;
+        static Mode currentMode = Mode.HiddenTear;
 
         // Attempts run
         static int attempts = 0;
 
         // Modified date dialog (form)
         ModifiedDateForm modifiedDialog = new ModifiedDateForm();
+
+        // Custom mode dialog (form)
+        CustomModeForm customDialog = new CustomModeForm();
 
         // Keys loaded from file
         static Queue<String> keyList = new Queue<String>();
@@ -74,8 +93,8 @@ namespace hidden_tear_bruteforcer
         static byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
         // Random strings from samples
-        static string randomString = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*/&%!=";
-        static string randomString2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/";
+        static string randomStringEDA2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*/&%!=";
+        static string randomStringHiddenTear = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/";
 
         // AES instance
         static RijndaelManaged AES = new RijndaelManaged
@@ -112,6 +131,21 @@ namespace hidden_tear_bruteforcer
             }
             ModeLabel.Text = "Mode: " + ModeLabel.DropDownItems[0].Text;
 
+            // Load password generators into custom dialog
+            var generators = Enum.GetValues(typeof(CustomSettings.PasswordGenerator));
+
+            foreach (var generator in generators)
+            {
+                customDialog.CustomPasswordGenerator.Items.Add(generator.ToString());
+            }
+            customDialog.CustomPasswordGenerator.SelectedIndex = 0;
+
+            // Add close handler to modified dialog
+            modifiedDialog.FormClosed += ModifiedDialog_FormClosed;
+
+            // Add close handler to custom dialog
+            customDialog.FormClosed += CustomDialog_FormClosed;
+
         }
 
         public static int GetInt(RNGCryptoServiceProvider rnd, int max)
@@ -127,7 +161,7 @@ namespace hidden_tear_bruteforcer
             return num % max;
         }
 
-        public static string CreatePassword(int length)
+        public static string CreateSecurePassword(int length, String randomString)
         {
             StringBuilder stringBuilder = new StringBuilder();
             
@@ -138,13 +172,13 @@ namespace hidden_tear_bruteforcer
             return stringBuilder.ToString();
         }
 
-        public static string CreatePseudoPassword(int length, int seed)
+        public static string CreatePseudoPassword(int length, int seed, String randomString)
         {
             StringBuilder res = new StringBuilder();
             Random rnd = new Random(seed);
             while (0 < length--)
             {
-                res.Append(randomString2[rnd.Next(randomString2.Length)]);
+                res.Append(randomString[rnd.Next(randomString.Length)]);
             }
             return res.ToString();
         }
@@ -247,7 +281,7 @@ namespace hidden_tear_bruteforcer
                         case Mode.HiddenTear:
 
                             // Generate a random password
-                            passwordAttempt = CreatePassword(32);
+                            passwordAttempt = CreateSecurePassword(32, randomStringHiddenTear);
 
                             // Test password for known file
                             //passwordAttempt = "VrtiGxUbI8afaJwGbkePtpJKINyGIkZC";
@@ -258,19 +292,42 @@ namespace hidden_tear_bruteforcer
                         case Mode.EDA2:
 
                             // Generate psuedo-random password
-                            passwordAttempt = CreatePseudoPassword(15, sampleTimestampTickInt - diff);
+                            passwordAttempt = CreatePseudoPassword(15, sampleTimestampTickInt - diff, randomStringEDA2);
                             diff++;
 
                             break;
 
                         // Custom mode
-                        /*
                         case Mode.Custom:
 
-                            // TODO: Grab values for which password generator to use, length of password, and random string to use
+                            // Determine generator to use
+                            // Super inefficient for each loop, but the Rfc2898DeriveBytes already takes 98% of execution time anyways...
+                            switch (customSettings.passwordGenerator)
+                            {
+
+                                // Secure generator
+                                case CustomSettings.PasswordGenerator.CreateSecurePassword:
+
+                                    passwordAttempt = CreateSecurePassword(customSettings.passwordLength, customSettings.possibleCharacters);
+
+                                    break;
+
+                                // Pseudo generator
+                                case CustomSettings.PasswordGenerator.CreatePseudoPassword:
+
+                                    passwordAttempt = CreatePseudoPassword(customSettings.passwordLength, sampleTimestampTickInt - diff, customSettings.possibleCharacters);
+                                    diff++;
+
+                                    break;
+
+                                default:
+
+                                    throw new InvalidEnumArgumentException("Invalid password generator");
+
+                            }
 
                             break;
-                        */
+
                         default:
 
                             throw new InvalidEnumArgumentException("Invalid mode");
@@ -476,16 +533,57 @@ namespace hidden_tear_bruteforcer
             // Update the label
             ModeLabel.Text = "Mode: " + e.ClickedItem.ToString();
 
+            // Special case for custom
+            if(currentMode == Mode.Custom)
+            {
+
+                // Open custom properties dialog
+                customDialog.ShowDialog();
+
+            }
+
         }
 
         private void setModifiedDateToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if(modifiedDialog.ShowDialog() == DialogResult.OK)
+            // Open modified dialog
+            modifiedDialog.ShowDialog();
+
+        }
+
+        private void ModifiedDialog_FormClosed(object sender, FormClosedEventArgs e)
+        {
+
+            // Check for proper closing and by button
+            if(e.CloseReason == CloseReason.UserClosing && modifiedDialog.closedByButton)
             {
 
-                sampleTimestampTick = (int) modifiedDialog.ModifiedDatePicker.Value.Ticks;
+                // Get the modified date
+                DateTime modifiedDate = modifiedDialog.ModifiedDatePicker.Value.Date.Add(modifiedDialog.ModifiedTimePicker.Value.TimeOfDay);
+                sampleTimestampTick = modifiedDate.Ticks;
+
+                // Reset the flag
+                modifiedDialog.closedByButton = false;
 
             }
+
         }
+
+        private void CustomDialog_FormClosed(object sender, FormClosedEventArgs e)
+        {
+
+            // check for proper closing and by button
+            if(e.CloseReason == CloseReason.UserClosing && customDialog.closedByButton)
+            {
+
+                // Get settings
+                customSettings.passwordLength = int.Parse(customDialog.CustomPasswordLength.Text);
+                customSettings.passwordGenerator = (CustomSettings.PasswordGenerator) Enum.Parse(typeof(CustomSettings.PasswordGenerator), customDialog.CustomPasswordGenerator.Text);
+                customSettings.possibleCharacters = customDialog.CustomPossibleCharacters.Text;
+
+            }
+
+        }
+
     }
 }

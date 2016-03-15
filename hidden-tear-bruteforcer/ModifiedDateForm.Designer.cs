@@ -61,6 +61,7 @@
             this.SetModifiedButton.TabIndex = 2;
             this.SetModifiedButton.Text = "Set Modified Date";
             this.SetModifiedButton.UseVisualStyleBackColor = true;
+            this.SetModifiedButton.Click += new System.EventHandler(this.SetModifiedButton_Click);
             // 
             // label1
             // 
