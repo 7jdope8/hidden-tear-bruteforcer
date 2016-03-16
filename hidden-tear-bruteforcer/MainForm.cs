@@ -61,6 +61,7 @@ namespace hidden_tear_bruteforcer
         {
             HiddenTear,
             EDA2,
+            BankAccountSummary,
             Custom
         };
 
@@ -95,6 +96,7 @@ namespace hidden_tear_bruteforcer
         // Random strings from samples
         static string randomStringEDA2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*/&%!=";
         static string randomStringHiddenTear = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/";
+        static string randomStringBankAccountSummary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=/";
 
         // AES instance
         static RijndaelManaged AES = new RijndaelManaged
@@ -280,19 +282,28 @@ namespace hidden_tear_bruteforcer
                         // HiddenTear mode
                         case Mode.HiddenTear:
 
-                            // Generate a random password
-                            passwordAttempt = CreateSecurePassword(32, randomStringHiddenTear);
-
-                            // Test password for known file
-                            //passwordAttempt = "VrtiGxUbI8afaJwGbkePtpJKINyGIkZC";
+                            // Generate psuedo-random password
+                            passwordAttempt = CreatePseudoPassword(15, sampleTimestampTickInt - diff, randomStringHiddenTear);
+                            diff++;
 
                             break;
 
                         // EDA2 mode
                         case Mode.EDA2:
 
+                            // Generate a random password
+                            passwordAttempt = CreateSecurePassword(32, randomStringEDA2);
+
+                            // Test password for known file
+                            //passwordAttempt = "VrtiGxUbI8afaJwGbkePtpJKINyGIkZC";
+
+                            break;
+
+                        // BankAccountSummary mode
+                        case Mode.BankAccountSummary:
+
                             // Generate psuedo-random password
-                            passwordAttempt = CreatePseudoPassword(15, sampleTimestampTickInt - diff, randomStringEDA2);
+                            passwordAttempt = CreatePseudoPassword(10, sampleTimestampTickInt - diff, randomStringBankAccountSummary);
                             diff++;
 
                             break;
