@@ -43,6 +43,7 @@ namespace hidden_tear_bruteforcer
             public int passwordLength;
             public PasswordGenerator passwordGenerator;
             public string possibleCharacters;
+            public byte[] salt;
         }
 
         // Custom settings loaded
@@ -62,6 +63,7 @@ namespace hidden_tear_bruteforcer
             HiddenTear,
             EDA2,
             BankAccountSummary,
+            MireWare,
             Custom
         };
 
@@ -91,7 +93,9 @@ namespace hidden_tear_bruteforcer
 
         // Set your salt here, change it to meet your flavor:
         // The salt bytes must be at least 8 bytes.
-        static byte[] saltBytes = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        static byte[] saltBytesHiddenTear = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        static byte[] saltBytesEDA2 = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        static byte[] saltBytesMireWare = new byte[] { 3, 1, 3, 3, 7, 1, 5, 7 };
 
         // Random strings from samples
         static string randomStringEDA2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*/&%!=";
@@ -185,7 +189,7 @@ namespace hidden_tear_bruteforcer
             return res.ToString();
         }
 
-        static public byte[] AES_Decrypt(byte[] bytesToBeDecrypted, byte[] passwordBytes)
+        static public byte[] AES_Decrypt(byte[] bytesToBeDecrypted, byte[] passwordBytes, byte[] saltBytes)
         {
             byte[] decryptedBytes = null;
 
@@ -256,6 +260,58 @@ namespace hidden_tear_bruteforcer
             // Cache integer cast of timestamp
             int sampleTimestampTickInt = (int)sampleTimestampTick;
 
+            // Salt
+            byte[] saltBytes;
+
+            // Determine mode
+            switch (currentMode)
+            {
+
+                // HiddenTear mode
+                case Mode.HiddenTear:
+
+                    // Set salt
+                    saltBytes = saltBytesHiddenTear;
+
+                    break;
+
+                // EDA2 mode
+                case Mode.EDA2:
+
+                    // Set salt
+                    saltBytes = saltBytesEDA2;
+
+                    break;
+
+                // BankAccountSummaryMode
+                case Mode.BankAccountSummary:
+
+                    saltBytes = saltBytesHiddenTear;
+
+                    break;
+
+                // MireWare mode
+                case Mode.MireWare:
+
+                    // Set salt
+                    saltBytes = saltBytesMireWare;
+
+                    break;
+
+                // Custom mode
+                case Mode.Custom:
+
+                    // Set salt
+                    saltBytes = customSettings.salt;
+
+                    break;
+
+                default:
+
+                    throw new InvalidEnumArgumentException("Invalid mode");
+
+            }
+
             while (true)
             {
                 attempts++;
@@ -304,6 +360,15 @@ namespace hidden_tear_bruteforcer
 
                             // Generate psuedo-random password
                             passwordAttempt = CreatePseudoPassword(10, sampleTimestampTickInt - diff, randomStringBankAccountSummary);
+                            diff++;
+
+                            break;
+
+                        // MireWare mode
+                        case Mode.MireWare:
+
+                            // Generate psuedo-random password
+                            passwordAttempt = CreatePseudoPassword(15, sampleTimestampTickInt - diff, randomStringHiddenTear);
                             diff++;
 
                             break;
@@ -367,7 +432,7 @@ namespace hidden_tear_bruteforcer
                 passwordBytes = sha256.ComputeHash(passwordBytes);
                 
                 // Decrypt with password
-                byte[] bytesDecrypted = AES_Decrypt(bytesToBeDecrypted, passwordBytes);
+                byte[] bytesDecrypted = AES_Decrypt(bytesToBeDecrypted, passwordBytes, saltBytes);
                 
                 // Check for failed decryption
                 if (bytesDecrypted == null)
