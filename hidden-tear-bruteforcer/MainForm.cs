@@ -1,30 +1,11 @@
-﻿/*
- _     _     _     _              _                  
-| |   (_)   | |   | |            | |                 
-| |__  _  __| | __| | ___ _ __   | |_ ___  __ _ _ __ 
-| '_ \| |/ _` |/ _` |/ _ \ '_ \  | __/ _ \/ _` | '__|
-| | | | | (_| | (_| |  __/ | | | | ||  __/ (_| | |   
-|_| |_|_|\__,_|\__,_|\___|_| |_|  \__\___|\__,_|_| 
- * Coded by Utku Sen(Jani) / August 2015 Istanbul / utkusen.com 
- * hidden tear may be used only for Educational Purposes. Do not use it as a ransomware!
- * You could go to jail on obstruction of justice charges just for running hidden tear, even though you are innocent.
- */
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Security;
 using System.Security.Cryptography;
 using System.IO;
-using System.Net;
-using Microsoft.Win32;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 
 namespace hidden_tear_bruteforcer
 {
@@ -55,7 +36,7 @@ namespace hidden_tear_bruteforcer
         static String decryptedFileName;
 
         // Sample timestamp
-        static long sampleTimestampTick;
+        static int sampleTimestampTick;
 
         // Modes
         public enum Mode
@@ -64,6 +45,7 @@ namespace hidden_tear_bruteforcer
             EDA2,
             BankAccountSummary,
             MireWare,
+            EightLockEight,
             Custom
         };
 
@@ -96,11 +78,13 @@ namespace hidden_tear_bruteforcer
         static byte[] saltBytesHiddenTear = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
         static byte[] saltBytesEDA2 = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
         static byte[] saltBytesMireWare = new byte[] { 3, 1, 3, 3, 7, 1, 5, 7 };
+        static byte[] saltEightLock = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 };
 
         // Random strings from samples
         static string randomStringEDA2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*/&%!=";
         static string randomStringHiddenTear = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/";
         static string randomStringBankAccountSummary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=/";
+        static string randomStringEightLock = "1234567890qwertyuiopasdfghjklzxc";
 
         // AES instance
         static RijndaelManaged AES = new RijndaelManaged
@@ -298,6 +282,14 @@ namespace hidden_tear_bruteforcer
 
                     break;
 
+                // 8lock8 mode
+                case Mode.EightLockEight:
+
+                    // Set salt
+                    saltBytes = saltEightLock;
+
+                    break;
+
                 // Custom mode
                 case Mode.Custom:
 
@@ -369,6 +361,15 @@ namespace hidden_tear_bruteforcer
 
                             // Generate psuedo-random password
                             passwordAttempt = CreatePseudoPassword(15, sampleTimestampTickInt - diff, randomStringHiddenTear);
+                            diff++;
+
+                            break;
+
+                        // 8lock8 mode
+                        case Mode.EightLockEight:
+
+                            // Generate pseudo-random password
+                            passwordAttempt = CreatePseudoPassword(32, sampleTimestampTickInt - diff, randomStringEightLock);
                             diff++;
 
                             break;
@@ -571,16 +572,18 @@ namespace hidden_tear_bruteforcer
                 this.sampleFileName = openSampleFileDialog.FileName;
 
                 // Get modified date in milliseconds
-                sampleTimestampTick = File.GetLastWriteTime(sampleFileName).Ticks;
+                DateTime writeTime = File.GetLastWriteTime(sampleFileName);
+                var timestamp = writeTime - DateTime.Now.AddMilliseconds(-Environment.TickCount);
+                sampleTimestampTick = (int) timestamp.TotalMilliseconds;
 
                 // Set form controls
-                modifiedDialog.ModifiedDatePicker.Value = modifiedDialog.ModifiedTimePicker.Value = new DateTime(sampleTimestampTick);
+                modifiedDialog.ModifiedDatePicker.Value = modifiedDialog.ModifiedTimePicker.Value = writeTime;
 
                 FileSelectedLabel.Text = Path.GetExtension(sampleFileName) + " file loaded";
 
             }
         }
-
+        
         private void loadKeyListToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if(openKeyListFileDialog.ShowDialog() == DialogResult.OK)
@@ -636,7 +639,8 @@ namespace hidden_tear_bruteforcer
 
                 // Get the modified date
                 DateTime modifiedDate = modifiedDialog.ModifiedDatePicker.Value.Date.Add(modifiedDialog.ModifiedTimePicker.Value.TimeOfDay);
-                sampleTimestampTick = modifiedDate.Ticks;
+                var timestamp = modifiedDate - DateTime.Now.AddMilliseconds(-Environment.TickCount);
+                sampleTimestampTick = (int) timestamp.TotalMilliseconds;
 
                 // Reset the flag
                 modifiedDialog.closedByButton = false;
